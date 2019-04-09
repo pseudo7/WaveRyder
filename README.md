@@ -1,3 +1,3 @@
 # WaveRyder
 
-## Wave Ryder, ride the waves with cool rides.
+## Wave Ryder, ride waves with cool rides.
