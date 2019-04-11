@@ -20,8 +20,7 @@ namespace WaterBuoyancy
         [Range(0f, 1f)]
         private float normalizedVoxelSize = 0.5f;
 
-        [SerializeField]
-        private float dragInWater = 1f;
+        public float dragInWater = 1f;
 
         [SerializeField]
         private float angularDragInWater = 1f;
@@ -87,12 +86,15 @@ namespace WaterBuoyancy
         {
             if (other.CompareTag(WaterVolume.TAG))
             {
+                StuntController.doingStunt = false;
+                FollowTarget.fixedCamera = true;
                 this.water = other.GetComponent<WaterVolume>();
                 if (this.voxels == null)
                 {
                     this.voxels = this.CutIntoVoxels();
                 }
             }
+            else FollowTarget.fixedCamera = false;
         }
 
         protected virtual void OnTriggerExit(Collider other)

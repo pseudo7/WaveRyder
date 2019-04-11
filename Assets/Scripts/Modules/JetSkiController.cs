@@ -6,14 +6,21 @@ using WaterBuoyancy;
 
 public class JetSkiController : MonoBehaviour
 {
+    [Header("Styles")]
+    public float boostDrag = 2f;
+    public float defaultDrag = 5f;
+    public float boostTimeout = 5f;
+
     [Header("Mechanics")]
     public Transform elevatorPivot;
     public Transform handlePivot;
-    public TrailRenderer trail;
+    public TrailRenderer mainTrail;
+    public TrailRenderer boostTrail;
     public int maxTurningAngle = 30;
     public int maxElevationAngle = 20;
     public float minEmissionVelocity = 20;
     public float elevatorDampening = 15;
+    public float handleRotationRate = 2.5f;
 
     [Header("Physics")]
     public FloatingObject floatingObject;
@@ -27,6 +34,13 @@ public class JetSkiController : MonoBehaviour
     public bool IsObjectInWater { get { return floatingObject.SubmergedVolume > submergeCheck; } }
 
     float handleRotation;
+    float boostCountdown;
+    bool applyBoost;
+
+    void Start()
+    {
+        boostCountdown = boostTimeout;
+    }
 
     void FixedUpdate()
     {
@@ -50,9 +64,13 @@ public class JetSkiController : MonoBehaviour
 
     void Trail()
     {
-        trail.emitting = Vector3.Angle(Vector3.up, transform.up) < 30 && IsObjectInWater && Velocity > minEmissionVelocity;
+        boostTrail.emitting = applyBoost && Vector3.Angle(Vector3.up, transform.up) < 30 && IsObjectInWater && Velocity > minEmissionVelocity;
         if (IsObjectInWater)
-            trail.transform.localPosition = new Vector3(0, transform.up.y > 0 ? -.8f : .8f, .8f);
+            boostTrail.transform.localPosition = new Vector3(0, transform.up.y > 0 ? -.8f : .8f, .8f);
+
+        mainTrail.emitting = Vector3.Angle(Vector3.up, transform.up) < 30 && IsObjectInWater && Velocity > minEmissionVelocity;
+        if (IsObjectInWater)
+            mainTrail.transform.localPosition = new Vector3(0, transform.up.y > 0 ? -.8f : .8f, .8f);
     }
 
     void UpdateVelocity()
@@ -65,19 +83,17 @@ public class JetSkiController : MonoBehaviour
         switch (Input.touchCount)
         {
             case 1:
-                Turn(Input.GetTouch(0).rawPosition.x < Screen.width / 2);
-                break;
-
-            case 2:
-                if (Mathf.Abs(Input.GetTouch(0).rawPosition.x - Input.GetTouch(1).rawPosition.x) > Screen.width / 2)
-                    ApplyBrake();
+                if (Input.GetTouch(0).rawPosition.x > Screen.width / 2) ApplyBrake();
                 break;
 
             default:
                 MoveForward();
-                handleRotation += (handleRotation > 0 ? -1 : 1);
                 break;
         }
+
+        handleRotation += (handleRotation > 0 ? -handleRotationRate : handleRotationRate);
+        ReduceBoost();
+        Turn(Input.acceleration.x);
     }
 
     void CheckInputEditor()
@@ -86,12 +102,28 @@ public class JetSkiController : MonoBehaviour
         {
             float move = Input.GetAxisRaw("Vertical");
             if (move < 0) ApplyBrake();
+            else if (move > 0) ApplyBoost();
             else MoveForward();
 
             float turn = Input.GetAxisRaw("Horizontal");
             if (turn != 0) Turn(turn < 0);
-            else handleRotation += (handleRotation > 0 ? -1 : 1);
+            else handleRotation += (handleRotation > 0 ? -handleRotationRate : handleRotationRate);
+
+            ReduceBoost();
         }
+    }
+
+    void ReduceBoost()
+    {
+        if (applyBoost)
+            if (boostCountdown <= 0)
+            {
+                floatingObject.dragInWater = defaultDrag;
+                boostCountdown = boostTimeout;
+                applyBoost = false;
+            }
+            else boostCountdown -= Time.deltaTime;
+        UIManager.Instance.UpdateBoost(boostCountdown);
     }
 
     void MoveForward()
@@ -104,6 +136,14 @@ public class JetSkiController : MonoBehaviour
         jetSkiRB.AddForce(transform.forward * -reverseSpeed);
     }
 
+    public void ApplyBoost()
+    {
+        if (applyBoost) return;
+        applyBoost = true;
+        boostCountdown = boostTimeout;
+        floatingObject.dragInWater = boostDrag;
+    }
+
     void PivotHandling()
     {
         elevatorPivot.localRotation = Quaternion.Euler(maxElevationAngle - Mathf.Clamp(Velocity / elevatorDampening, 0, maxElevationAngle), 0, 0);
@@ -111,7 +151,7 @@ public class JetSkiController : MonoBehaviour
         if (Vector3.Angle(Vector3.up, transform.up) > 100 && IsObjectInWater) RestartLevel();
     }
 
-    void RestartLevel()
+    public void RestartLevel()
     {
         SceneManager.LoadScene(0);
     }
@@ -119,6 +159,12 @@ public class JetSkiController : MonoBehaviour
     void Turn(bool turnLeft)
     {
         jetSkiRB.AddTorque(transform.up * (turnLeft ? -turningSpeed : turningSpeed));
-        handleRotation = Mathf.Clamp(handleRotation += turnLeft ? -1 : 1, -maxTurningAngle, maxTurningAngle);
+        handleRotation = Mathf.Clamp(handleRotation += turnLeft ? -handleRotationRate : handleRotationRate, -maxTurningAngle, maxTurningAngle);
+    }
+
+    void Turn(float turnValue)
+    {
+        jetSkiRB.AddTorque(transform.up * turnValue * turningSpeed);
+        handleRotation = Mathf.Clamp(handleRotation += turnValue < 0 ? -handleRotationRate : handleRotationRate, -maxTurningAngle, maxTurningAngle);
     }
 }
