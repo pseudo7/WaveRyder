@@ -90,10 +90,12 @@ public class JetSkiController : MonoBehaviour
                 MoveForward();
                 break;
         }
-
-        handleRotation += (handleRotation > 0 ? -handleRotationRate : handleRotationRate);
+        float xAcc = Input.acceleration.x;
+        if (Mathf.Abs(xAcc) > .12f)
+            Turn(xAcc);
+        else
+            handleRotation += (handleRotation > 0 ? -handleRotationRate : handleRotationRate);
         ReduceBoost();
-        Turn(Input.acceleration.x);
     }
 
     void CheckInputEditor()

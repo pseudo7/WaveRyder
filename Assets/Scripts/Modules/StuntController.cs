@@ -6,95 +6,124 @@ public class StuntController : MonoBehaviour
 {
     public static bool doingStunt;
 
-    public float senstivity = 4;
+    public const string RAMP_TAG = "Ramp";
+
     public float torque = 6;
     public float tunnelTorque = 2;
 
-    bool gestureRecieved;
-    Touch touch1, touch2;
+    //bool gestureRecieved;
+    Rigidbody playerRB;
+
+    void Start()
+    {
+        playerRB = GetComponent<Rigidbody>();
+    }
 
     void Update()
     {
 #if UNITY_EDITOR
-        if (Input.GetKeyDown(KeyCode.A))
+        if (Input.GetKey(KeyCode.A))
             PerformStunt(StuntType.BACK_FLIP);
-        if (Input.GetKeyDown(KeyCode.S))
+        if (Input.GetKey(KeyCode.S))
             PerformStunt(StuntType.FRONT_FLIP);
-        if (Input.GetKeyDown(KeyCode.D))
+        if (Input.GetKey(KeyCode.D))
             PerformStunt(StuntType.RIGHT_360);
-        if (Input.GetKeyDown(KeyCode.F))
+        if (Input.GetKey(KeyCode.F))
             PerformStunt(StuntType.LEFT_360);
-        if (Input.GetKeyDown(KeyCode.Q))
+        if (Input.GetKey(KeyCode.Q))
             PerformStunt(StuntType.TUNNEL_LEFT);
-        if (Input.GetKeyDown(KeyCode.W))
+        if (Input.GetKey(KeyCode.W))
             PerformStunt(StuntType.TUNNEL_RIGHT);
 #else
         if (Input.touchCount == 2)
-        {
-            touch1 = Input.GetTouch(0);
-            touch2 = Input.GetTouch(1);
-            if (touch1.phase == TouchPhase.Moved && touch2.phase == TouchPhase.Moved)
-                SetStuntType(touch1.deltaPosition, touch2.deltaPosition);
-            else if (touch1.phase == TouchPhase.Ended && touch2.phase == TouchPhase.Ended)
-                gestureRecieved = false;
-        }
+            SetStuntType(Input.GetTouch(0), Input.GetTouch(1));
 #endif
     }
 
-    void SetStuntType(Vector2 delta1, Vector2 delta2)
+    void SetStuntType(Touch touch1, Touch touch2)
     {
-        if (gestureRecieved) return;
-        gestureRecieved = true;
+        if (!doingStunt) return;
 
-        if (delta1.sqrMagnitude > senstivity && delta2.sqrMagnitude > senstivity)
+        float x1 = touch1.position.x;
+        float y1 = touch1.position.y;
+        float x2 = touch2.position.x;
+        float y2 = touch2.position.y;
+
+        //Debug.Log(x1 + " " + y1 + " " + x2 + " " + y2);
+
+        int xMedian = Screen.width / 2;
+        int yMedian = Screen.height / 2;
+
+        if (Mathf.Abs(x1) - Mathf.Abs(x2) > xMedian)
         {
-            if (touch1.rawPosition.x < Screen.width / 2)
-            {
-                if (delta1.y < 0 && delta2.y > 0) PerformStunt(StuntType.TUNNEL_LEFT);
-                else if (delta1.y > 0 && delta2.y < 0) PerformStunt(StuntType.TUNNEL_RIGHT);
-            }
-            else
-            {
-                if (delta1.y < 0 && delta2.y > 0) PerformStunt(StuntType.TUNNEL_RIGHT);
-                else if (delta1.y > 0 && delta2.y < 0) PerformStunt(StuntType.TUNNEL_LEFT);
-            }
-            if (Mathf.Abs(delta1.x) < Mathf.Abs(delta1.y))
-            {
-                if (delta1.y < 0 && delta2.y < 0) PerformStunt(StuntType.BACK_FLIP);
-                else if (delta1.y > 0 && delta2.y > 0) PerformStunt(StuntType.FRONT_FLIP);
-            }
-            else if (Mathf.Abs(delta1.x) > Mathf.Abs(delta1.y))
-            {
-                if (delta1.x > 0 && delta2.x > 0) PerformStunt(StuntType.RIGHT_360);
-                else if (delta1.x < 0 && delta2.x < 0) PerformStunt(StuntType.LEFT_360);
-            }
+            if (y1 < yMedian && y2 < yMedian)
+                PerformStunt(StuntType.BACK_FLIP);
+            else if (y1 > yMedian && y2 > yMedian)
+                PerformStunt(StuntType.FRONT_FLIP);
+            else if (y1 > yMedian && y2 < yMedian)
+                PerformStunt(StuntType.TUNNEL_LEFT);
+            else if (y1 < yMedian && y2 > yMedian)
+                PerformStunt(StuntType.TUNNEL_RIGHT);
         }
+        else
+        {
+            if (x1 < xMedian && x2 < xMedian)
+                PerformStunt(StuntType.LEFT_360);
+            else if (x1 > xMedian && x2 > xMedian)
+                PerformStunt(StuntType.RIGHT_360);
+        }
+
+        //if (touch1.rawPosition.x < Screen.width / 2)
+        //{
+        //    if (delta1.y < 0 && delta2.y > 0) PerformStunt(StuntType.TUNNEL_LEFT);
+        //    else if (delta1.y > 0 && delta2.y < 0) PerformStunt(StuntType.TUNNEL_RIGHT);
+        //}
+        //else
+        //{
+        //    if (delta1.y < 0 && delta2.y > 0) PerformStunt(StuntType.TUNNEL_RIGHT);
+        //    else if (delta1.y > 0 && delta2.y < 0) PerformStunt(StuntType.TUNNEL_LEFT);
+        //}
+        //if (Mathf.Abs(delta1.x) < Mathf.Abs(delta1.y))
+        //{
+        //    if (delta1.y < 0 && delta2.y < 0) PerformStunt(StuntType.BACK_FLIP);
+        //    else if (delta1.y > 0 && delta2.y > 0) PerformStunt(StuntType.FRONT_FLIP);
+        //}
+        //else if (Mathf.Abs(delta1.x) > Mathf.Abs(delta1.y))
+        //{
+        //    if (delta1.x > 0 && delta2.x > 0) PerformStunt(StuntType.RIGHT_360);
+        //    else if (delta1.x < 0 && delta2.x < 0) PerformStunt(StuntType.LEFT_360);
+        //}
     }
+
+    //void ReEnableStunt()
+    //{
+    //    doingStunt = false;
+    //}
 
     void PerformStunt(StuntType type)
     {
-        if (doingStunt) return;
-        doingStunt = true;
-        Rigidbody playerRB = GetComponent<Rigidbody>();
+        Debug.Log(type);
+        //if (doingStunt) return;
+        //doingStunt = true;
         switch (type)
         {
             case StuntType.BACK_FLIP:
-                playerRB.AddTorque(transform.right * -torque, ForceMode.Impulse);
+                playerRB.AddTorque(transform.right * -torque, ForceMode.Acceleration);
                 break;
             case StuntType.FRONT_FLIP:
-                playerRB.AddTorque(transform.right * torque, ForceMode.Impulse);
+                playerRB.AddTorque(transform.right * torque, ForceMode.Acceleration);
                 break;
             case StuntType.RIGHT_360:
-                playerRB.AddTorque(transform.up * -torque, ForceMode.Impulse);
+                playerRB.AddTorque(transform.up * torque, ForceMode.Acceleration);
                 break;
             case StuntType.LEFT_360:
-                playerRB.AddTorque(transform.up * torque, ForceMode.Impulse);
+                playerRB.AddTorque(transform.up * -torque, ForceMode.Acceleration);
                 break;
             case StuntType.TUNNEL_RIGHT:
-                playerRB.AddTorque(transform.forward * -tunnelTorque, ForceMode.Impulse);
+                playerRB.AddTorque(transform.forward * -tunnelTorque, ForceMode.Acceleration);
                 break;
             case StuntType.TUNNEL_LEFT:
-                playerRB.AddTorque(transform.forward * tunnelTorque, ForceMode.Impulse);
+                playerRB.AddTorque(transform.forward * tunnelTorque, ForceMode.Acceleration);
                 break;
         }
     }

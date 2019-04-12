@@ -19,4 +19,12 @@ public class UIManager : MonoBehaviour
     {
         boostBar.value = val / 5;
     }
+
+#if UNITY_EDITOR
+    [UnityEditor.MenuItem("Pseudo/Capture")]
+    public static void Capture()
+    {
+        ScreenCapture.CaptureScreenshot(string.Format("{0}.png", System.DateTime.Now.Ticks.ToString()));
+    }
+#endif
 }

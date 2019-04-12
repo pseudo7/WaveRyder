@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class FollowTarget : MonoBehaviour
 {
-    public static bool fixedCamera = true;
+    public static bool dynamicCamera = true;
 
     public Transform target;
     public Vector3 positionOffset = new Vector3(0, 5, -10);
@@ -13,7 +13,7 @@ public class FollowTarget : MonoBehaviour
 
     void LateUpdate()
     {
-        if (fixedCamera)
+        if (dynamicCamera)
         {
             transform.position = target.position + new Vector3(positionOffset.x, positionOffset.y, 0) + target.forward * positionOffset.z;
             transform.rotation = Quaternion.LookRotation(target.position - transform.position) * Quaternion.Euler(rotationOffset);

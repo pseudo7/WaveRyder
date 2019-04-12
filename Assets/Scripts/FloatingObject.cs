@@ -86,15 +86,23 @@ namespace WaterBuoyancy
         {
             if (other.CompareTag(WaterVolume.TAG))
             {
-                StuntController.doingStunt = false;
-                FollowTarget.fixedCamera = true;
+                FollowTarget.dynamicCamera = true;
                 this.water = other.GetComponent<WaterVolume>();
                 if (this.voxels == null)
                 {
                     this.voxels = this.CutIntoVoxels();
                 }
             }
-            else FollowTarget.fixedCamera = false;
+            else if (other.CompareTag(StuntController.RAMP_TAG))
+            {
+                FollowTarget.dynamicCamera = false;
+                if (StuntController.doingStunt) return;
+                StuntController.doingStunt = true;
+                if (FollowTarget.dynamicCamera)
+                    rigidbody.AddForce(transform.forward * 10, ForceMode.Impulse);
+                rigidbody.angularVelocity = Vector3.zero;
+                Debug.Log("Boosted");
+            }
         }
 
         protected virtual void OnTriggerExit(Collider other)
@@ -104,6 +112,8 @@ namespace WaterBuoyancy
                 this.water = null;
                 SubmergedVolume = 0;
             }
+            else if (other.CompareTag(StuntController.RAMP_TAG))
+                rigidbody.angularVelocity = Vector3.zero;
         }
 
         protected virtual void OnDrawGizmos()
